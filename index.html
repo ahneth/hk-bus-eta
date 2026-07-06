@@ -271,8 +271,8 @@
         .eta-time { font-size: 2.2rem; font-weight: 800; line-height: 1; }
         .eta-time span { font-size: 1rem; font-weight: 600; margin-left: 2px; }
 
-        .kmb .eta-time { color: var(--kmb-red); }
-        .ctb .eta-time { color: var(--ctb-blue); }
+        .eta-time { color: var(--ctb-blue); }
+        .eta-time.urgent { color: var(--kmb-red); }
 
         .eta-timestamp { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
@@ -320,9 +320,8 @@
             <h1>NextBus HK</h1>
             <div class="header-controls">
                 <select id="langToggle" class="lang-select" onchange="applyTranslations()">
-                    <option value="both">Eng / 中文</option>
-                    <option value="en">English</option>
                     <option value="zh">中文</option>
+                    <option value="en">English</option>
                 </select>
                 <div class="live-status" id="liveStatus" style="display: none;">
                     <div class="pulse"></div> <span id="txtLive">Live</span>
@@ -778,7 +777,7 @@
                                 ${remarkHtml}
                             </div>
                             <div class="eta-time-block">
-                                <div class="eta-time">${timeOutput}</div>
+                                <div class="eta-time ${diffMins < 5 ? 'urgent' : ''}">${timeOutput}</div>
                                 <div class="eta-timestamp">${timeFormatted}</div>
                             </div>
                          </div>`;
