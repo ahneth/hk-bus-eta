@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HK Next Bus</title>
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --surface: #FFFFFF;
+            --primary: #000000;
+            --kmb-red: #E4002B;
+            --ctb-blue: #0055A5;
+            --ctb-yellow: #FFCC00;
+            --text-main: #1C1C1E;
+            --text-muted: #8E8E93;
+            --border-radius: 12px;
+            --spacing: 15px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: env(safe-area-inset-top, 15px) var(--spacing) env(safe-area-inset-bottom, 15px) var(--spacing);
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 15px 0;
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .lang-select {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #D1D1D6;
+            background: var(--surface);
+            font-size: 0.85rem;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: #E5E5EA;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background-color: #34C759;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(52, 199, 89, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background-color: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-shrink: 0;
+            margin-bottom: 12px;
+        }
+
+        .search-row { display: flex; gap: 10px; }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 0;
+            padding: 14px;
+            border: 1px solid #E5E5EA;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            outline: none;
+            background: var(--bg-color);
+            transition: border 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            background: var(--surface);
+        }
+
+        input[type="text"]::placeholder {
+            text-transform: none;
+            font-weight: 400;
+            color: #C7C7CC;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 0 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .btn-primary:active { opacity: 0.8; }
+
+        .stop-row { display: flex; gap: 10px; }
+
+        .select-wrapper { position: relative; flex: 1; min-width: 0;}
+
+        select.main-select {
+            width: 100%;
+            padding: 14px 40px 14px 14px;
+            border: 1px solid #E5E5EA;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-main);
+            appearance: none;
+            background: var(--bg-color) url('data:image/svg+xml;utf8,<svg fill="%238E8E93" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center;
+            outline: none;
+            text-overflow: ellipsis;
+        }
+
+        select.main-select:disabled { opacity: 0.5; }
+
+        .btn-bookmark {
+            background-color: var(--bg-color);
+            border: 1px solid #E5E5EA;
+            border-radius: var(--border-radius);
+            width: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .btn-bookmark:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-bookmark svg { width: 24px; height: 24px; }
+        .btn-bookmark.saved { background-color: var(--ctb-yellow); border-color: var(--ctb-yellow); }
+        .btn-bookmark.saved svg { fill: #FFF; stroke: #FFF; }
+
+        /* Bookmarks List */
+        .bookmarks-container {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            flex-shrink: 0;
+        }
+        
+        .bookmarks-container::-webkit-scrollbar { display: none; }
+
+        .bookmark-chip {
+            background: var(--surface);
+            padding: 10px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #E5E5EA;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .bookmark-chip strong { color: var(--ctb-blue); font-size: 0.9rem;}
+        .bookmark-chip span { color: var(--text-muted); font-size: 0.75rem;}
+
+        /* ETA Display Area */
+        .eta-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 5px;
+            min-height: 0; 
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            padding-left: 5px;
+            display: flex;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        #etaContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .eta-card {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            border-left: 6px solid #ccc;
+            flex-shrink: 0;
+        }
+
+        .eta-card.kmb { border-left-color: var(--kmb-red); }
+        .eta-card.ctb { border-left-color: var(--ctb-yellow); }
+
+        .eta-info { display: flex; flex-direction: column; gap: 4px; flex: 1; padding-right: 10px; }
+        .eta-dest { font-size: 1.1rem; font-weight: 700; }
+        .eta-remark { font-size: 0.85rem; color: var(--text-muted); }
+
+        .eta-time-block { text-align: right; }
+        .eta-time { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+        .eta-time span { font-size: 1rem; font-weight: 600; margin-left: 2px; }
+
+        .kmb .eta-time { color: var(--kmb-red); }
+        .ctb .eta-time { color: var(--ctb-blue); }
+
+        .eta-timestamp { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+        .message-box {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-weight: 500;
+            background: var(--surface);
+            border-radius: var(--border-radius);
+        }
+
+        /* Loading Overlay */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(242, 242, 247, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0,0,0,0.1);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay"><div class="spinner"></div></div>
+
+    <div class="app-container">
+        <header>
+            <h1>NextBus HK</h1>
+            <div class="header-controls">
+                <select id="langToggle" class="lang-select" onchange="applyTranslations()">
+                    <option value="both">Eng / 中文</option>
+                    <option value="en">English</option>
+                    <option value="zh">中文</option>
+                </select>
+                <div class="live-status" id="liveStatus" style="display: none;">
+                    <div class="pulse"></div> <span id="txtLive">Live</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="control-panel">
+            <div class="search-row">
+                <input type="text" id="routeInput" placeholder="Route (e.g. 298X)" autocomplete="off">
+                <button id="btnSearch" class="btn-primary" onclick="handleSearch()">Search</button>
+            </div>
+            
+            <div class="select-wrapper">
+                <select id="directionSelect" class="main-select" disabled onchange="handleDirectionSelect()">
+                    <option value="">1. Select Direction</option>
+                </select>
+            </div>
+            
+            <div class="stop-row">
+                <div class="select-wrapper">
+                    <select id="stopSelect" class="main-select" disabled onchange="handleStopSelect()">
+                        <option value="">2. Select Bus Stop</option>
+                    </select>
+                </div>
+                <button id="btnBookmark" class="btn-bookmark" onclick="toggleBookmark()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </section>
+
+        <div class="bookmarks-container" id="bookmarksContainer" style="display:none;"></div>
+
+        <section class="eta-section">
+            <div class="section-title">
+                <span id="txtArrivals">Arrival Times</span>
+                <span id="refreshText"></span>
+            </div>
+            <div id="etaContainer">
+                <div class="message-box" id="txtEmptyBox">Enter a route to see real-time arrivals.</div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Data Caches (Added kmbRouteList to cache the master list)
+        const cache = { kmb: { stops: {} }, ctb: { stops: {} } };
+        let kmbRouteListCache = null;
+
+        // App State
+        const appState = {
+            route: '', availableDirs: [], selectedDirObj: null, availableStops: [], selectedStopId: '', etas: [] 
+        };
+        
+        let countdownInterval = null;
+
+        // Utility: Translate strings
+        function getDisplayName(en, zh) {
+            const lang = document.getElementById('langToggle').value;
+            const validEn = en || '';
+            const validZh = zh || '';
+            
+            if (lang === 'en') return validEn || validZh;
+            if (lang === 'zh') return validZh || validEn;
+            
+            if (validEn && validZh && validEn !== validZh) return `${validEn} / ${validZh}`;
+            return validEn || validZh;
+        }
+
+        function applyTranslations() {
+            document.getElementById('routeInput').placeholder = getDisplayName('Route (e.g. 298X)', '路線 (例如 298X)');
+            document.getElementById('btnSearch').innerText = getDisplayName('Search', '搜尋');
+            document.getElementById('txtLive').innerText = getDisplayName('Live', '實時');
+            document.getElementById('txtArrivals').innerText = getDisplayName('Arrival Times', '預計抵達時間');
+            
+            if (appState.route === '') {
+                document.getElementById('txtEmptyBox').innerText = getDisplayName('Enter a route to see real-time arrivals.', '請輸入路線以查看實時預計抵達時間。');
+            } else if (appState.etas.length === 0 && appState.selectedStopId !== '') {
+                document.getElementById('etaContainer').innerHTML = `<div class="message-box">${getDisplayName('No upcoming buses. Service may have ended.', '暫無班次，可能已過服務時間。')}</div>`;
+            }
+
+            renderDirectionsDropdown();
+            renderStopsDropdown();
+            renderBookmarks(); 
+            renderEtas();
+        }
+
+        function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
+
+        // --- Bookmarks Logic ---
+        function getBookmarkId() {
+            if (!appState.route || !appState.selectedDirObj || !appState.selectedStopId) return null;
+            return `${appState.route}-${appState.selectedDirObj.operator}-${appState.selectedDirObj.bound}-${appState.selectedStopId}`;
+        }
+
+        function toggleBookmark() {
+            const bId = getBookmarkId();
+            if (!bId) return;
+
+            let bookmarks = JSON.parse(localStorage.getItem('hkBusBookmarks') || '[]');
+            const exists = bookmarks.some(b => b.id === bId);
+
+            if (exists) {
+                bookmarks = bookmarks.filter(b => b.id !== bId); 
+            } else {
+                const currentStop = appState.availableStops.find(s => s.id === appState.selectedStopId);
+                bookmarks.push({ id: bId, route: appState.route, dirObj: appState.selectedDirObj, stop: currentStop });
+            }
+
+            localStorage.setItem('hkBusBookmarks', JSON.stringify(bookmarks));
+            updateBookmarkBtn();
+            renderBookmarks();
+        }
+
+        function updateBookmarkBtn() {
+            const btn = document.getElementById('btnBookmark');
+            const bId = getBookmarkId();
+            
+            if (!bId) {
+                btn.disabled = true;
+                btn.classList.remove('saved');
+                return;
+            }
+
+            btn.disabled = false;
+            const bookmarks = JSON.parse(localStorage.getItem('hkBusBookmarks') || '[]');
+            if (bookmarks.some(b => b.id === bId)) {
+                btn.classList.add('saved');
+            } else {
+                btn.classList.remove('saved');
+            }
+        }
+
+        function renderBookmarks() {
+            const container = document.getElementById('bookmarksContainer');
+            const bookmarks = JSON.parse(localStorage.getItem('hkBusBookmarks') || '[]');
+            
+            if (bookmarks.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'flex';
+            container.innerHTML = bookmarks.map(b => {
+                const stopName = getDisplayName(b.stop.name_en, b.stop.name_tc);
+                return `<div class="bookmark-chip" onclick="loadBookmark('${b.id}')">
+                    <strong>${b.route} (${b.dirObj.operator.toUpperCase()})</strong>
+                    <span>${stopName}</span>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadBookmark(id) {
+            const bookmarks = JSON.parse(localStorage.getItem('hkBusBookmarks') || '[]');
+            const b = bookmarks.find(x => x.id === id);
+            if (!b) return;
+
+            showLoading(true);
+            document.getElementById('routeInput').value = b.route;
+            appState.route = b.route;
+            
+            await populateMatches(); 
+            
+            appState.selectedDirObj = appState.availableDirs.find(d => 
+                d.operator === b.dirObj.operator && d.bound === b.dirObj.bound && d.service_type === b.dirObj.service_type
+            ) || b.dirObj;
+            
+            renderDirectionsDropdown();
+            
+            await populateStopsForDir();
+            appState.selectedStopId = b.stop.id;
+            renderStopsDropdown();
+            
+            showLoading(false);
+            handleStopSelect(); 
+        }
+
+        // --- Core Fetch Logic (Now purely lazy loading) ---
+        async function populateMatches() {
+            appState.availableDirs = [];
+            
+            // 1. KMB Matches - Fetch Master List and filter locally
+            try {
+                if (!kmbRouteListCache) {
+                    // Fetch full list once per session (fast and lightweight)
+                    const kmbRes = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/route/`);
+                    if (kmbRes.ok) {
+                        const kmbJson = await kmbRes.json();
+                        kmbRouteListCache = kmbJson.data;
+                    }
+                }
+
+                if (kmbRouteListCache) {
+                    const matches = kmbRouteListCache.filter(r => r.route === appState.route);
+                    if (matches.length > 0) {
+                        const seenBounds = new Set();
+                        // Sort by service type to prioritize main routes over special departures
+                        matches.sort((a, b) => parseInt(a.service_type) - parseInt(b.service_type)).forEach(r => {
+                            if (!seenBounds.has(r.bound)) {
+                                seenBounds.add(r.bound);
+                                appState.availableDirs.push({ 
+                                    operator: 'kmb', bound: r.bound, service_type: r.service_type, 
+                                    dest_en: r.dest_en, dest_tc: r.dest_tc 
+                                });
+                            }
+                        });
+                    }
+                }
+            } catch (e) { console.warn("KMB search issue", e); }
+
+            // 2. CTB Matches - Citybus specific route endpoint works perfectly
+            try {
+                const ctbRes = await fetch(`https://rt.data.gov.hk/v2/transport/citybus/route/CTB/${appState.route}`);
+                if (ctbRes.ok) {
+                    const ctbJson = await ctbRes.json();
+                    if (ctbJson.data && Object.keys(ctbJson.data).length > 0 && ctbJson.data.route) {
+                        const rd = ctbJson.data;
+                        appState.availableDirs.push({ operator: 'ctb', bound: 'outbound', dest_en: rd.dest_en, dest_tc: rd.dest_tc });
+                        appState.availableDirs.push({ operator: 'ctb', bound: 'inbound', dest_en: rd.orig_en, dest_tc: rd.orig_tc });
+                    }
+                }
+            } catch (e) { console.warn("CTB search issue", e); }
+        }
+
+        async function populateStopsForDir() {
+            appState.availableStops = [];
+            if (!appState.selectedDirObj) return;
+
+            const { operator, bound, service_type } = appState.selectedDirObj;
+
+            try {
+                if (operator === 'kmb') {
+                    // Map API bound standard to url param path
+                    const boundMap = { 'O': 'outbound', 'I': 'inbound' };
+                    const pathDir = boundMap[bound] || 'outbound';
+
+                    const rsRes = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${appState.route}/${pathDir}/${service_type}`);
+                    const rsJson = await rsRes.json();
+                    const routeStops = rsJson.data;
+
+                    const fetchPromises = routeStops.map(async (rs) => {
+                        if (!cache.kmb.stops[rs.stop]) {
+                            try {
+                                const stopRes = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/stop/${rs.stop}`);
+                                if (stopRes.ok) {
+                                    const stopJson = await stopRes.json();
+                                    cache.kmb.stops[rs.stop] = stopJson.data;
+                                }
+                            } catch(err) {}
+                        }
+                    });
+                    
+                    await Promise.all(fetchPromises);
+                    
+                    appState.availableStops = routeStops.map(rs => {
+                        const sInfo = cache.kmb.stops[rs.stop];
+                        return { id: rs.stop, seq: rs.seq, name_en: sInfo ? sInfo.name_en : rs.stop, name_tc: sInfo ? sInfo.name_tc : rs.stop };
+                    });
+
+                } else if (operator === 'ctb') {
+                    const r = await fetch(`https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/${appState.route}/${bound}`);
+                    const j = await r.json();
+                    const routeStops = j.data;
+                    
+                    const fetchPromises = routeStops.map(async (rs) => {
+                        if (!cache.ctb.stops[rs.stop]) {
+                            try {
+                                const stopRes = await fetch(`https://rt.data.gov.hk/v2/transport/citybus/stop/${rs.stop}`);
+                                if (stopRes.ok) {
+                                    const stopJson = await stopRes.json();
+                                    cache.ctb.stops[rs.stop] = stopJson.data;
+                                }
+                            } catch(err) {}
+                        }
+                    });
+                    
+                    await Promise.all(fetchPromises);
+                    
+                    appState.availableStops = routeStops.map(rs => {
+                        const sInfo = cache.ctb.stops[rs.stop];
+                        return { id: rs.stop, seq: rs.seq, name_en: sInfo ? sInfo.name_en : rs.stop, name_tc: sInfo ? sInfo.name_tc : rs.stop };
+                    });
+                }
+            } catch (e) { console.error("Error populating stops", e); }
+        }
+
+        // --- UI Interactions ---
+        async function handleSearch() {
+            const input = document.getElementById('routeInput').value.trim().toUpperCase();
+            if (!input) return;
+
+            document.getElementById('routeInput').blur(); 
+            showLoading(true);
+            
+            appState.route = input;
+            appState.selectedDirObj = null;
+            appState.selectedStopId = '';
+            appState.etas = [];
+            resetLiveStatus();
+
+            await populateMatches();
+            showLoading(false);
+
+            if (appState.availableDirs.length === 0) {
+                alert(getDisplayName(`Route ${appState.route} not found.`, `找不到路線 ${appState.route}。`));
+                return;
+            }
+
+            renderDirectionsDropdown();
+            renderStopsDropdown();
+            renderEtas();
+            updateBookmarkBtn();
+        }
+
+        function renderDirectionsDropdown() {
+            const dirSelect = document.getElementById('directionSelect');
+            dirSelect.innerHTML = `<option value="">1. ${getDisplayName('Select Direction', '選擇方向')}</option>`;
+            
+            appState.availableDirs.forEach((dir, index) => {
+                const opTag = dir.operator === 'kmb' ? '[KMB]' : '[CTB]';
+                const destName = getDisplayName(dir.dest_en, dir.dest_tc);
+                dirSelect.add(new Option(`${opTag} To: ${destName}`, index));
+            });
+
+            dirSelect.disabled = appState.availableDirs.length === 0;
+
+            if (appState.selectedDirObj) {
+                const index = appState.availableDirs.findIndex(d => d.bound === appState.selectedDirObj.bound && d.operator === appState.selectedDirObj.operator);
+                if (index > -1) dirSelect.value = index;
+            }
+        }
+
+        async function handleDirectionSelect() {
+            const selectedIdx = document.getElementById('directionSelect').value;
+            
+            if (selectedIdx === "") {
+                appState.selectedDirObj = null;
+                appState.availableStops = [];
+            } else {
+                appState.selectedDirObj = appState.availableDirs[selectedIdx];
+                document.getElementById('stopSelect').innerHTML = `<option value="">${getDisplayName('Loading...', '載入中...')}</option>`;
+                await populateStopsForDir();
+            }
+            
+            appState.selectedStopId = '';
+            appState.etas = [];
+            resetLiveStatus();
+            renderStopsDropdown();
+            renderEtas();
+            updateBookmarkBtn();
+        }
+
+        function renderStopsDropdown() {
+            const stopSelect = document.getElementById('stopSelect');
+            stopSelect.innerHTML = `<option value="">2. ${getDisplayName('Select Bus Stop', '選擇車站')}</option>`;
+            
+            appState.availableStops.forEach(stop => {
+                const stopName = getDisplayName(stop.name_en, stop.name_tc);
+                stopSelect.add(new Option(`${stop.seq}. ${stopName}`, stop.id));
+            });
+
+            stopSelect.disabled = appState.availableStops.length === 0;
+
+            if (appState.selectedStopId) {
+                stopSelect.value = appState.selectedStopId;
+            }
+        }
+
+        function handleStopSelect() {
+            appState.selectedStopId = document.getElementById('stopSelect').value;
+            updateBookmarkBtn();
+            
+            if (!appState.selectedStopId) {
+                resetLiveStatus();
+                appState.etas = [];
+                renderEtas();
+                return;
+            }
+            
+            document.getElementById('liveStatus').style.display = 'flex';
+            fetchEtaData();
+            
+            if (countdownInterval) clearInterval(countdownInterval);
+            let secondsLeft = 30;
+            document.getElementById('refreshText').innerText = `${getDisplayName('Sync in', '更新於')} ${secondsLeft}s`;
+            
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                document.getElementById('refreshText').innerText = `${getDisplayName('Sync in', '更新於')} ${secondsLeft}s`;
+                if (secondsLeft <= 0) {
+                    secondsLeft = 30;
+                    fetchEtaData();
+                }
+            }, 1000);
+        }
+
+        async function fetchEtaData() {
+            const { operator, bound, service_type } = appState.selectedDirObj;
+            try {
+                let rawEtas = [];
+                if (operator === 'kmb') {
+                    const res = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/eta/${appState.selectedStopId}/${appState.route}/${service_type}`);
+                    const j = await res.json();
+                    rawEtas = j.data.filter(e => e.dir === bound);
+                } else {
+                    const res = await fetch(`https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/${appState.selectedStopId}/${appState.route}`);
+                    const j = await res.json();
+                    const dirCode = bound === 'outbound' ? 'O' : 'I';
+                    rawEtas = j.data.filter(e => e.dir === dirCode);
+                }
+                
+                appState.etas = rawEtas.filter(e => e.eta).sort((a, b) => new Date(a.eta) - new Date(b.eta)).slice(0, 3);
+                renderEtas();
+            } catch (e) {
+                document.getElementById('etaContainer').innerHTML = `<div class="message-box" style="color: red;">${getDisplayName('Error fetching ETAs.', '讀取預計抵達時間失敗。')}</div>`;
+            }
+        }
+
+        function renderEtas() {
+            const etaContainer = document.getElementById('etaContainer');
+            
+            if (!appState.route || !appState.selectedDirObj || !appState.selectedStopId) {
+                etaContainer.innerHTML = `<div class="message-box" id="txtEmptyBox">${getDisplayName('Enter a route to see real-time arrivals.', '請輸入路線以查看實時預計抵達時間。')}</div>`;
+                return;
+            }
+
+            if (appState.etas.length === 0) {
+                etaContainer.innerHTML = `<div class="message-box">${getDisplayName('No upcoming buses. Service may have ended.', '暫無班次，可能已過服務時間。')}</div>`;
+                return;
+            }
+
+            let html = '';
+            appState.etas.forEach(e => {
+                const etaDate = new Date(e.eta);
+                const diffMins = Math.max(0, Math.floor((etaDate - new Date()) / 60000));
+                
+                const minText = getDisplayName('min', '分鐘');
+                const nowText = getDisplayName('Now', '即將抵達');
+                let timeOutput = diffMins === 0 ? `<span style="font-size:1.8rem;">${nowText}</span>` : `${diffMins}<span>${minText}</span>`;
+                
+                const dest = getDisplayName(e.dest_en, e.dest_tc) || 'Terminus';
+                const remark = getDisplayName(e.rmk_en, e.rmk_tc);
+                const remarkHtml = remark ? `<div class="eta-remark">${remark}</div>` : '';
+                const themeClass = appState.selectedDirObj.operator === 'ctb' ? 'ctb' : 'kmb';
+                
+                let timeFormatted = etaDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                html += `<div class="eta-card ${themeClass}">
+                            <div class="eta-info">
+                                <div class="eta-dest">To: ${dest}</div>
+                                ${remarkHtml}
+                            </div>
+                            <div class="eta-time-block">
+                                <div class="eta-time">${timeOutput}</div>
+                                <div class="eta-timestamp">${timeFormatted}</div>
+                            </div>
+                         </div>`;
+            });
+            etaContainer.innerHTML = html;
+        }
+
+        function resetLiveStatus() {
+            document.getElementById('liveStatus').style.display = 'none';
+            document.getElementById('refreshText').innerText = '';
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
+        document.getElementById('routeInput').addEventListener('input', function() {
+            appState.route = '';
+            appState.availableDirs = [];
+            appState.selectedDirObj = null;
+            appState.availableStops = [];
+            appState.selectedStopId = '';
+            appState.etas = [];
+            
+            renderDirectionsDropdown();
+            renderStopsDropdown();
+            renderEtas();
+            updateBookmarkBtn();
+            resetLiveStatus();
+        });
+
+        document.getElementById('routeInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); handleSearch(); }
+        });
+
+        // Init
+        applyTranslations();
+        renderBookmarks();
+    </script>
+</body>
+</html>
